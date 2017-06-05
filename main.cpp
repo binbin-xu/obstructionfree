@@ -11,7 +11,7 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/optflow.hpp>
-
+#include <opencv2/ximgproc/sparse_match_interpolator.hpp>
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -28,6 +28,9 @@ Mat indexToMask(Mat indexMat, int rows, int cols);
 
 //use Homography to filter outliers in the flow
 Mat flowHomography(Mat edges, Mat flow, int ransacThre);
+
+//interpolate from sparse edgeflow to dense optical flow
+Mat sparse_int_dense(Mat im1, Mat im2, Mat im1_edges, Mat sparseFlow);
 
 int main(int argc, const char * argv[]) {
 
@@ -110,9 +113,9 @@ int main(int argc, const char * argv[]) {
 
     //rest edges and flows
     Mat rest_edges=im1_edge-back_edges;
-    imshow("rest_edges", rest_edges);
+    //imshow("rest_edges", rest_edges);
     Mat rest_flow=edgeflow-back_flow;
-    colorFlow(rest_flow, "rest_flow");
+    //colorFlow(rest_flow, "rest_flow");
 
     //align resting flows to another homograghy
     Mat foreH, mask_foreH;
@@ -136,12 +139,35 @@ int main(int argc, const char * argv[]) {
     rest_flow.copyTo(fore_flow,fore_edges);
     colorFlow(fore_flow, "fore_flow");
 
+    ///////////////////interpolation from sparse edgeFlow to denseFlow/////////////////////
 
 
-//    imshow("rest_edges", rest_edges);
+//    vector<Point2f> sparseFrom;
+//    vector<Point2f> sparseTo;
+//
+//    vector<Point> backedge_Location;
+//    findNonZero(back_edges, backedge_Location);
+//    for(size_t i = 0; i<backedge_Location.size();i++){
+//        float src_x=backedge_Location[i].x;
+//        float src_y=backedge_Location[i].y;
+//        sparseFrom.push_back(Point2f(src_x, src_y));
+//        Point2f f = flow.at<Point2f>(src_y, src_x);
+//        sparseTo.push_back(Point2f(src_x + f.x, src_y + f.y));
+//        }
+//
+//    Ptr<cv::ximgproc::SparseMatchInterpolator> epicInterpolation=ximgproc::createEdgeAwareInterpolator();
+//    Mat denseflow;
+//    epicInterpolation->interpolate(im1_grey,sparseFrom,im2_grey,sparseTo,denseflow);
+//    colorFlow(denseflow,"interpolated denseflow");
 
+    Mat back_denseFlow;
+    back_denseFlow=sparse_int_dense(im1_grey, im2_grey, back_edges, back_flow);
 
+    Mat fore_denseFlow;
+    fore_denseFlow=sparse_int_dense(im1_grey, im2_grey, fore_edges, fore_flow);
 
+    colorFlow(back_denseFlow,"interpolated background denseflow");
+    colorFlow(fore_denseFlow,"interpolated foreground denseflow");
 
     //cout<<back_edgeLocations.cols<<endl<<back_edgeLocations.rows<<endl;
     //cout<< edgeflow.size()<<endl<< mask_backH.total()<<endl;
@@ -221,6 +247,12 @@ void colorFlow(Mat flow, string figName="optical flow")
     Mat bgr;//CV_32FC3 matrix
     cvtColor(hsv, bgr, COLOR_HSV2BGR);
     imshow(figName, bgr);
+
+
+    //interpolation
+
+
+
     //imwrite("c://resultOfOF.jpg", bgr);
     //cv::waitKey(0);
 }
@@ -238,16 +270,19 @@ void drawOptFlowMap(const Mat& flow, Mat& cflowmap, int step,
         }
 }
 
+
     Mat indexToMask(Mat indexMat, int rows, int cols){
         Mat maskMat=Mat::zeros(rows, cols, CV_8UC1);
         for (int i = 0; i < indexMat.cols; i++ ) {
-        for (int j = 0; j < indexMat.rows; j++) {
+            for (int j = 0; j < indexMat.rows; j++) {
                 Vec2i mask_loca = indexMat.at<Vec2i>(j, i);
                 if (mask_loca[0] !=0 && mask_loca[1] !=0) {
                     maskMat.at<uchar>(Point(mask_loca)) = 255;}
         }}
     return  maskMat;
     }
+
+
 
     Mat flowHomography(Mat edges, Mat flow, int ransacThre){
         Mat inlierMask, inlier_edges, inilier_edgeLocations;
@@ -274,4 +309,23 @@ void drawOptFlowMap(const Mat& flow, Mat& cflowmap, int step,
         return inlier_edges;
     }
 
+    Mat sparse_int_dense(Mat im1, Mat im2, Mat im1_edges, Mat sparseFlow){
+        Mat denseFlow;
+        vector<Point2f> sparseFrom;
+        vector<Point2f> sparseTo;
+
+        vector<Point> edge_Location;
+        findNonZero(im1_edges, edge_Location);
+        for(size_t i = 0; i<edge_Location.size();i++){
+            float src_x=edge_Location[i].x;
+            float src_y=edge_Location[i].y;
+            sparseFrom.push_back(Point2f(src_x, src_y));
+            Point2f f = sparseFlow.at<Point2f>(src_y, src_x);
+            sparseTo.push_back(Point2f(src_x + f.x, src_y + f.y));
+        }
+
+        Ptr<cv::ximgproc::SparseMatchInterpolator> epicInterpolation=ximgproc::createEdgeAwareInterpolator();
+        epicInterpolation->interpolate(im1,sparseFrom,im2,sparseTo,denseFlow);
+        return denseFlow;
+    }
 
