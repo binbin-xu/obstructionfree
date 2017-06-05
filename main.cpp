@@ -14,9 +14,9 @@
 
 #include <opencv2/ximgproc/sparse_match_interpolator.hpp>
 
-#include <gsl/gsl_math.h>
-#include <gsl/gsl_interp2d.h>
-#include <gsl/gsl_spline2d.h>
+//#include <gsl/gsl_math.h>
+//#include <gsl/gsl_interp2d.h>
+//#include <gsl/gsl_spline2d.h>
 
 //#include "interpolator.h"
 
@@ -38,6 +38,8 @@ Mat flowHomography(Mat edges, Mat flow, int ransacThre);
 
 //interpolate from sparse edgeflow to dense optical flow
 Mat sparse_int_dense(Mat im1, Mat im2, Mat im1_edges, Mat sparseFlow);
+
+Mat imgWarpFlow(Mat im1, Mat flow);
 
 int main(int argc, const char * argv[]) {
 
@@ -147,53 +149,6 @@ int main(int argc, const char * argv[]) {
     colorFlow(fore_flow, "fore_flow");
 
     ///////////////////interpolation from sparse edgeFlow to denseFlow/////////////////////
- ////////////////polynomial interpolation test////////////////////
-    const gsl_interp2d_type *T = gsl_interp2d_bilinear;
-    const size_t N = back_flow.rows*back_flow.cols; /* number of points to interpolate */
-    const double xa[] = { 0.0, double(back_flow.rows-1)*sizeof(double) }; /* define size */
-    const double ya[] = { 0.0, double(back_flow.cols-1)*sizeof(double) };
-    const size_t nx = double(back_flow.rows); /* x grid points */
-    const size_t ny = double(back_flow.cols); /* y grid points */
-    double *flowx = (double *) malloc(nx * ny * sizeof(double));
-    gsl_spline2d *spline = gsl_spline2d_alloc(T, nx, ny);
-    gsl_interp_accel *xacc = gsl_interp_accel_alloc();
-    gsl_interp_accel *yacc = gsl_interp_accel_alloc();
-
-    /* set z grid values */
-
-/* initialize interpolation */
-
-    vector<Point> backedge_Location;
-    findNonZero(back_edges, backedge_Location);
-    for(size_t i = 0; i<backedge_Location.size();i=i+2){
-        vector<double> src_coordinate;
-        double src_x = backedge_Location[i].x;
-        double src_y = backedge_Location[i].y;
-        Point2f f = back_flow.at<Point2f>(src_x, src_y);
-        gsl_spline2d_set(spline, flowx, src_x, src_y, f.x);
-    }
-    gsl_spline2d_init(spline, xa, ya, flowx, nx, ny);
-
-
-
-    Mat denseFlow=back_flow.clone();
-    for(size_t j=0; j<im1_edge.rows;j++){
-        for (size_t i=0; i<im1_edge.cols;i++){
-            Point2f& f=denseFlow.at<Point2f>(j,i);
-            f.x = gsl_spline2d_eval(spline, j, i, xacc, yacc);
-            //f.y=rbf_interpolation_y.getInterpolatedValue(obj_coordinate);
-        }
-    }
-    /* interpolate N values in x and y and print out grid for plotting */
-
-    gsl_spline2d_free(spline);
-    gsl_interp_accel_free(xacc);
-    gsl_interp_accel_free(yacc);
-    free(flowx);
-
-    colorFlow(denseFlow,"rbf_inter_back");
-////////////////////////////////////////////////////////////////////////
-
 
     ////////////epicinterpolation-test/////////////////
 //    vector<Point2f> sparseFrom;
@@ -224,7 +179,9 @@ int main(int argc, const char * argv[]) {
     colorFlow(fore_denseFlow,"interpolated foreground denseflow");
 
 
-
+    //warping images according to the estimated background motion fields
+    Mat warpedFrame=imgWarpFlow(im2_grey, back_denseFlow);
+    imshow("warped image",warpedFrame);
 
 /////////////////////MRF////////////////////////////////////////////////
 /*
@@ -376,5 +333,20 @@ void drawOptFlowMap(const Mat& flow, Mat& cflowmap, int step,
         Ptr<cv::ximgproc::SparseMatchInterpolator> epicInterpolation=ximgproc::createEdgeAwareInterpolator();
         epicInterpolation->interpolate(im1,sparseFrom,im2,sparseTo,denseFlow);
         return denseFlow;
+    }
+
+    //flow=flow->cal(im1,im2), so warp im2 to back
+    Mat imgWarpFlow(Mat im1, Mat flow){
+        Mat flowmap_x(flow.size(), CV_32FC1);
+        Mat flowmap_y(flow.size(), CV_32FC1);
+        for (int j = 0; j < flowmap_x.rows; j++){
+            for (int i = 0; i < flowmap_x.cols; ++i){
+                Point2f f = flow.at<Point2f>(j, i);
+                flowmap_y.at<float>(j, i) = float(j + f.y);
+                flowmap_x.at<float>(j, i) = float(i + f.x);
+                }}
+        Mat warpedFrame;
+        remap(im1, warpedFrame, flowmap_x,flowmap_y ,INTER_CUBIC);
+        return warpedFrame;
     }
 
