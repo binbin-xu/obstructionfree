@@ -1,15 +1,17 @@
 # depslib dependency file v1.0
-1496673158 source:/media/psf/Dropbox/code_working/opencv/edgeflow/main.cpp
+1496677667 source:/media/psf/Dropbox/code_working/opencv/edgeflow/main.cpp
 	<iostream>
 	<opencv2/opencv.hpp>
 	<opencv2/imgproc.hpp>
 	<opencv2/highgui.hpp>
 	<opencv2/optflow.hpp>
 	<opencv2/ximgproc/sparse_match_interpolator.hpp>
+	<gsl/gsl_math.h>
+	<gsl/gsl_interp2d.h>
+	<gsl/gsl_spline2d.h>
 	<stdlib.h>
 	<stdio.h>
 	"mrf.h"
-	"interpolator.h"
 	"edgeflow.h"
 
 1495602892 /usr/local/include/opencv2/opencv.hpp

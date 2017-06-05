@@ -11,13 +11,19 @@
 #include <opencv2/imgproc.hpp>
 #include <opencv2/highgui.hpp>
 #include <opencv2/optflow.hpp>
+
 #include <opencv2/ximgproc/sparse_match_interpolator.hpp>
+
+#include <gsl/gsl_math.h>
+#include <gsl/gsl_interp2d.h>
+#include <gsl/gsl_spline2d.h>
+
+//#include "interpolator.h"
 
 #include <stdlib.h>
 #include <stdio.h>
 
 #include "mrf.h"
-#include "interpolator.h"
 #include"edgeflow.h"
 
 using namespace cv;
@@ -141,37 +147,49 @@ int main(int argc, const char * argv[]) {
     colorFlow(fore_flow, "fore_flow");
 
     ///////////////////interpolation from sparse edgeFlow to denseFlow/////////////////////
- ////////////////rbf_interpolation test////////////////////
-    Interpolator rbf_interpolation_x, rbf_interpolation_y;
-    rbf_interpolation_x.resetAll();
-    rbf_interpolation_y.resetAll();
+ ////////////////polynomial interpolation test////////////////////
+    const gsl_interp2d_type *T = gsl_interp2d_bilinear;
+    const size_t N = back_flow.rows*back_flow.cols; /* number of points to interpolate */
+    const double xa[] = { 0.0, double(back_flow.rows-1)*sizeof(double) }; /* define size */
+    const double ya[] = { 0.0, double(back_flow.cols-1)*sizeof(double) };
+    const size_t nx = double(back_flow.rows); /* x grid points */
+    const size_t ny = double(back_flow.cols); /* y grid points */
+    double *flowx = (double *) malloc(nx * ny * sizeof(double));
+    gsl_spline2d *spline = gsl_spline2d_alloc(T, nx, ny);
+    gsl_interp_accel *xacc = gsl_interp_accel_alloc();
+    gsl_interp_accel *yacc = gsl_interp_accel_alloc();
+
+    /* set z grid values */
+
+/* initialize interpolation */
 
     vector<Point> backedge_Location;
     findNonZero(back_edges, backedge_Location);
     for(size_t i = 0; i<backedge_Location.size();i=i+2){
         vector<double> src_coordinate;
-        src_coordinate.push_back(backedge_Location[i].x);
-        src_coordinate.push_back(backedge_Location[i].y);
-        Point2f f = back_flow.at<Point2f>(src_coordinate[0], src_coordinate[1]);
-        rbf_interpolation_x.addCenterPoint(f.x,src_coordinate);
-        rbf_interpolation_y.addCenterPoint(f.y,src_coordinate);
+        double src_x = backedge_Location[i].x;
+        double src_y = backedge_Location[i].y;
+        Point2f f = back_flow.at<Point2f>(src_x, src_y);
+        gsl_spline2d_set(spline, flowx, src_x, src_y, f.x);
     }
-    rbf_interpolation_x.computeWeights();
-    rbf_interpolation_y.computeWeights();
+    gsl_spline2d_init(spline, xa, ya, flowx, nx, ny);
+
+
 
     Mat denseFlow=back_flow.clone();
-    for(int j=0; j<im1_edge.rows;j++){
-        for (int i=0; i<im1_edge.cols;i++){
-            vector<double> obj_coordinate;
-            obj_coordinate.push_back(j);
-            obj_coordinate.push_back(i);
+    for(size_t j=0; j<im1_edge.rows;j++){
+        for (size_t i=0; i<im1_edge.cols;i++){
             Point2f& f=denseFlow.at<Point2f>(j,i);
-            f.x=rbf_interpolation_x.getInterpolatedValue(obj_coordinate);
-            f.y=rbf_interpolation_y.getInterpolatedValue(obj_coordinate);
+            f.x = gsl_spline2d_eval(spline, j, i, xacc, yacc);
+            //f.y=rbf_interpolation_y.getInterpolatedValue(obj_coordinate);
         }
     }
-    rbf_interpolation_x.resetAll();
-    rbf_interpolation_y.resetAll();
+    /* interpolate N values in x and y and print out grid for plotting */
+
+    gsl_spline2d_free(spline);
+    gsl_interp_accel_free(xacc);
+    gsl_interp_accel_free(yacc);
+    free(flowx);
 
     colorFlow(denseFlow,"rbf_inter_back");
 ////////////////////////////////////////////////////////////////////////
