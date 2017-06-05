@@ -17,6 +17,7 @@
 #include <stdio.h>
 
 #include "mrf.h"
+#include "interpolator.h"
 #include"edgeflow.h"
 
 using namespace cv;
@@ -140,8 +141,43 @@ int main(int argc, const char * argv[]) {
     colorFlow(fore_flow, "fore_flow");
 
     ///////////////////interpolation from sparse edgeFlow to denseFlow/////////////////////
+ ////////////////rbf_interpolation test////////////////////
+    Interpolator rbf_interpolation_x, rbf_interpolation_y;
+    rbf_interpolation_x.resetAll();
+    rbf_interpolation_y.resetAll();
+
+    vector<Point> backedge_Location;
+    findNonZero(back_edges, backedge_Location);
+    for(size_t i = 0; i<backedge_Location.size();i=i+2){
+        vector<double> src_coordinate;
+        src_coordinate.push_back(backedge_Location[i].x);
+        src_coordinate.push_back(backedge_Location[i].y);
+        Point2f f = back_flow.at<Point2f>(src_coordinate[0], src_coordinate[1]);
+        rbf_interpolation_x.addCenterPoint(f.x,src_coordinate);
+        rbf_interpolation_y.addCenterPoint(f.y,src_coordinate);
+    }
+    rbf_interpolation_x.computeWeights();
+    rbf_interpolation_y.computeWeights();
+
+    Mat denseFlow=back_flow.clone();
+    for(int j=0; j<im1_edge.rows;j++){
+        for (int i=0; i<im1_edge.cols;i++){
+            vector<double> obj_coordinate;
+            obj_coordinate.push_back(j);
+            obj_coordinate.push_back(i);
+            Point2f& f=denseFlow.at<Point2f>(j,i);
+            f.x=rbf_interpolation_x.getInterpolatedValue(obj_coordinate);
+            f.y=rbf_interpolation_y.getInterpolatedValue(obj_coordinate);
+        }
+    }
+    rbf_interpolation_x.resetAll();
+    rbf_interpolation_y.resetAll();
+
+    colorFlow(denseFlow,"rbf_inter_back");
+////////////////////////////////////////////////////////////////////////
 
 
+    ////////////epicinterpolation-test/////////////////
 //    vector<Point2f> sparseFrom;
 //    vector<Point2f> sparseTo;
 //
@@ -159,7 +195,7 @@ int main(int argc, const char * argv[]) {
 //    Mat denseflow;
 //    epicInterpolation->interpolate(im1_grey,sparseFrom,im2_grey,sparseTo,denseflow);
 //    colorFlow(denseflow,"interpolated denseflow");
-
+/////////////////////////////////////////////////////////////
     Mat back_denseFlow;
     back_denseFlow=sparse_int_dense(im1_grey, im2_grey, back_edges, back_flow);
 
@@ -169,15 +205,10 @@ int main(int argc, const char * argv[]) {
     colorFlow(back_denseFlow,"interpolated background denseflow");
     colorFlow(fore_denseFlow,"interpolated foreground denseflow");
 
-    //cout<<back_edgeLocations.cols<<endl<<back_edgeLocations.rows<<endl;
-    //cout<< edgeflow.size()<<endl<< mask_backH.total()<<endl;
-    //cout<<back_edgeLocations.type()<<endl;
-    //drawOptFlowMap(flow, im1_grey, 16, 1.5, CV_RGB(0, 255, 0));
-    //imshow("flow", im1_grey);
-
-    //cout<<flow.type()<<endl;
 
 
+
+/////////////////////MRF////////////////////////////////////////////////
 /*
     int patch=5; //patch size (2*patch+1)^2
     //remove edges near the image borders

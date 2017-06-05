@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1496662018 source:/media/psf/Dropbox/code_working/opencv/edgeflow/main.cpp
+1496673158 source:/media/psf/Dropbox/code_working/opencv/edgeflow/main.cpp
 	<iostream>
 	<opencv2/opencv.hpp>
 	<opencv2/imgproc.hpp>
@@ -9,6 +9,7 @@
 	<stdlib.h>
 	<stdio.h>
 	"mrf.h"
+	"interpolator.h"
 	"edgeflow.h"
 
 1495602892 /usr/local/include/opencv2/opencv.hpp
@@ -804,4 +805,467 @@
 
 1495602966 /usr/local/include/opencv2/ximgproc/sparse_match_interpolator.hpp
 	<opencv2/core.hpp>
+
+1496665881 /media/psf/Dropbox/code_working/opencv/edgeflow/rbf-Interpolator/interpolator.h
+	<vector>
+	<string>
+
+1496673292 source:/media/psf/Dropbox/code_working/opencv/edgeflow/rbf-Interpolator/interpolator.cpp
+	"interpolator.h"
+	<cmath>
+	<fstream>
+	<sstream>
+	<Eigen/Core>
+	<Eigen/LU>
+
+1496642316 /usr/local/include/Eigen/Core
+	"src/Core/util/DisableStupidWarnings.h"
+	<new>
+	"src/Core/util/Macros.h"
+	<complex>
+	"src/Core/util/MKL_support.h"
+	<malloc.h>
+	<immintrin.h>
+	<emmintrin.h>
+	<xmmintrin.h>
+	<pmmintrin.h>
+	<tmmintrin.h>
+	<smmintrin.h>
+	<nmmintrin.h>
+	<immintrin.h>
+	<altivec.h>
+	<altivec.h>
+	<arm_neon.h>
+	<vector_types.h>
+	<omp.h>
+	<cerrno>
+	<cstddef>
+	<cstdlib>
+	<cmath>
+	<cassert>
+	<functional>
+	<iosfwd>
+	<cstring>
+	<string>
+	<limits>
+	<climits>
+	<algorithm>
+	<iostream>
+	<intrin.h>
+	"src/Core/util/Constants.h"
+	"src/Core/util/Meta.h"
+	"src/Core/util/ForwardDeclarations.h"
+	"src/Core/util/StaticAssert.h"
+	"src/Core/util/XprHelper.h"
+	"src/Core/util/Memory.h"
+	"src/Core/NumTraits.h"
+	"src/Core/MathFunctions.h"
+	"src/Core/SpecialFunctions.h"
+	"src/Core/GenericPacketMath.h"
+	"src/Core/arch/SSE/PacketMath.h"
+	"src/Core/arch/SSE/Complex.h"
+	"src/Core/arch/SSE/MathFunctions.h"
+	"src/Core/arch/AVX/PacketMath.h"
+	"src/Core/arch/AVX/MathFunctions.h"
+	"src/Core/arch/AVX/Complex.h"
+	"src/Core/arch/AVX/TypeCasting.h"
+	"src/Core/arch/SSE/PacketMath.h"
+	"src/Core/arch/SSE/MathFunctions.h"
+	"src/Core/arch/SSE/Complex.h"
+	"src/Core/arch/SSE/TypeCasting.h"
+	"src/Core/arch/AltiVec/PacketMath.h"
+	"src/Core/arch/AltiVec/MathFunctions.h"
+	"src/Core/arch/AltiVec/Complex.h"
+	"src/Core/arch/NEON/PacketMath.h"
+	"src/Core/arch/NEON/MathFunctions.h"
+	"src/Core/arch/NEON/Complex.h"
+	"src/Core/arch/CUDA/PacketMath.h"
+	"src/Core/arch/CUDA/MathFunctions.h"
+	"src/Core/arch/Default/Settings.h"
+	"src/Core/functors/BinaryFunctors.h"
+	"src/Core/functors/UnaryFunctors.h"
+	"src/Core/functors/NullaryFunctors.h"
+	"src/Core/functors/StlFunctors.h"
+	"src/Core/functors/AssignmentFunctors.h"
+	"src/Core/DenseCoeffsBase.h"
+	"src/Core/DenseBase.h"
+	"src/Core/MatrixBase.h"
+	"src/Core/EigenBase.h"
+	"src/Core/Product.h"
+	"src/Core/CoreEvaluators.h"
+	"src/Core/AssignEvaluator.h"
+	"src/Core/Assign.h"
+	"src/Core/ArrayBase.h"
+	"src/Core/util/BlasUtil.h"
+	"src/Core/DenseStorage.h"
+	"src/Core/NestByValue.h"
+	"src/Core/ReturnByValue.h"
+	"src/Core/NoAlias.h"
+	"src/Core/PlainObjectBase.h"
+	"src/Core/Matrix.h"
+	"src/Core/Array.h"
+	"src/Core/CwiseBinaryOp.h"
+	"src/Core/CwiseUnaryOp.h"
+	"src/Core/CwiseNullaryOp.h"
+	"src/Core/CwiseUnaryView.h"
+	"src/Core/SelfCwiseBinaryOp.h"
+	"src/Core/Dot.h"
+	"src/Core/StableNorm.h"
+	"src/Core/Stride.h"
+	"src/Core/MapBase.h"
+	"src/Core/Map.h"
+	"src/Core/Ref.h"
+	"src/Core/Block.h"
+	"src/Core/VectorBlock.h"
+	"src/Core/Transpose.h"
+	"src/Core/DiagonalMatrix.h"
+	"src/Core/Diagonal.h"
+	"src/Core/DiagonalProduct.h"
+	"src/Core/Redux.h"
+	"src/Core/Visitor.h"
+	"src/Core/Fuzzy.h"
+	"src/Core/IO.h"
+	"src/Core/Swap.h"
+	"src/Core/CommaInitializer.h"
+	"src/Core/GeneralProduct.h"
+	"src/Core/Solve.h"
+	"src/Core/Inverse.h"
+	"src/Core/SolverBase.h"
+	"src/Core/PermutationMatrix.h"
+	"src/Core/Transpositions.h"
+	"src/Core/TriangularMatrix.h"
+	"src/Core/SelfAdjointView.h"
+	"src/Core/products/GeneralBlockPanelKernel.h"
+	"src/Core/products/Parallelizer.h"
+	"src/Core/ProductEvaluators.h"
+	"src/Core/products/GeneralMatrixVector.h"
+	"src/Core/products/GeneralMatrixMatrix.h"
+	"src/Core/SolveTriangular.h"
+	"src/Core/products/GeneralMatrixMatrixTriangular.h"
+	"src/Core/products/SelfadjointMatrixVector.h"
+	"src/Core/products/SelfadjointMatrixMatrix.h"
+	"src/Core/products/SelfadjointProduct.h"
+	"src/Core/products/SelfadjointRank2Update.h"
+	"src/Core/products/TriangularMatrixVector.h"
+	"src/Core/products/TriangularMatrixMatrix.h"
+	"src/Core/products/TriangularSolverMatrix.h"
+	"src/Core/products/TriangularSolverVector.h"
+	"src/Core/BandMatrix.h"
+	"src/Core/CoreIterators.h"
+	"src/Core/BooleanRedux.h"
+	"src/Core/Select.h"
+	"src/Core/VectorwiseOp.h"
+	"src/Core/Random.h"
+	"src/Core/Replicate.h"
+	"src/Core/Reverse.h"
+	"src/Core/ArrayWrapper.h"
+	"src/Core/products/GeneralMatrixMatrix_MKL.h"
+	"src/Core/products/GeneralMatrixVector_MKL.h"
+	"src/Core/products/GeneralMatrixMatrixTriangular_MKL.h"
+	"src/Core/products/SelfadjointMatrixMatrix_MKL.h"
+	"src/Core/products/SelfadjointMatrixVector_MKL.h"
+	"src/Core/products/TriangularMatrixMatrix_MKL.h"
+	"src/Core/products/TriangularMatrixVector_MKL.h"
+	"src/Core/products/TriangularSolverMatrix_MKL.h"
+	"src/Core/Assign_MKL.h"
+	"src/Core/GlobalFunctions.h"
+	"src/Core/util/ReenableStupidWarnings.h"
+
+1496642316 /usr/local/include/Eigen/src/Core/util/DisableStupidWarnings.h
+
+1496642316 /usr/local/include/Eigen/src/Core/util/Macros.h
+	<cstdlib>
+	<iostream>
+
+1496642316 /usr/local/include/Eigen/src/Core/util/MKL_support.h
+	<mkl.h>
+	<mkl_lapacke.h>
+
+1496642316 /usr/local/include/Eigen/src/Core/util/Constants.h
+
+1496642316 /usr/local/include/Eigen/src/Core/util/Meta.h
+	<cfloat>
+	<math_constants.h>
+
+1496642316 /usr/local/include/Eigen/src/Core/util/ForwardDeclarations.h
+
+1496642316 /usr/local/include/Eigen/src/Core/util/StaticAssert.h
+
+1496642316 /usr/local/include/Eigen/src/Core/util/XprHelper.h
+
+1496642316 /usr/local/include/Eigen/src/Core/util/Memory.h
+	<unistd.h>
+
+1496642316 /usr/local/include/Eigen/src/Core/NumTraits.h
+
+1496642316 /usr/local/include/Eigen/src/Core/MathFunctions.h
+
+1496642316 /usr/local/include/Eigen/src/Core/SpecialFunctions.h
+
+1496642316 /usr/local/include/Eigen/src/Core/GenericPacketMath.h
+
+1496642316 /usr/local/include/Eigen/src/Core/arch/SSE/PacketMath.h
+
+1496642316 /usr/local/include/Eigen/src/Core/arch/SSE/Complex.h
+
+1496642316 /usr/local/include/Eigen/src/Core/arch/SSE/MathFunctions.h
+
+1496642316 /usr/local/include/Eigen/src/Core/arch/AVX/PacketMath.h
+
+1496642316 /usr/local/include/Eigen/src/Core/arch/AVX/MathFunctions.h
+
+1496642316 /usr/local/include/Eigen/src/Core/arch/AVX/Complex.h
+
+1496642316 /usr/local/include/Eigen/src/Core/arch/AVX/TypeCasting.h
+
+1496642316 /usr/local/include/Eigen/src/Core/arch/SSE/TypeCasting.h
+
+1496642316 /usr/local/include/Eigen/src/Core/arch/AltiVec/PacketMath.h
+
+1496642316 /usr/local/include/Eigen/src/Core/arch/AltiVec/MathFunctions.h
+
+1496642316 /usr/local/include/Eigen/src/Core/arch/AltiVec/Complex.h
+
+1496642316 /usr/local/include/Eigen/src/Core/arch/NEON/PacketMath.h
+
+1496642316 /usr/local/include/Eigen/src/Core/arch/NEON/MathFunctions.h
+
+1496642316 /usr/local/include/Eigen/src/Core/arch/NEON/Complex.h
+
+1496642316 /usr/local/include/Eigen/src/Core/arch/CUDA/PacketMath.h
+
+1496642316 /usr/local/include/Eigen/src/Core/arch/CUDA/MathFunctions.h
+
+1496642316 /usr/local/include/Eigen/src/Core/arch/Default/Settings.h
+
+1496642316 /usr/local/include/Eigen/src/Core/functors/BinaryFunctors.h
+
+1496642316 /usr/local/include/Eigen/src/Core/functors/UnaryFunctors.h
+
+1496642316 /usr/local/include/Eigen/src/Core/functors/NullaryFunctors.h
+
+1496642316 /usr/local/include/Eigen/src/Core/functors/StlFunctors.h
+
+1496642316 /usr/local/include/Eigen/src/Core/functors/AssignmentFunctors.h
+
+1496642316 /usr/local/include/Eigen/src/Core/DenseCoeffsBase.h
+
+1496642316 /usr/local/include/Eigen/src/Core/DenseBase.h
+	"../plugins/BlockMethods.h"
+
+1496642316 /usr/local/include/Eigen/src/plugins/BlockMethods.h
+
+1496642316 /usr/local/include/Eigen/src/Core/MatrixBase.h
+	"../plugins/CommonCwiseUnaryOps.h"
+	"../plugins/CommonCwiseBinaryOps.h"
+	"../plugins/MatrixCwiseUnaryOps.h"
+	"../plugins/MatrixCwiseBinaryOps.h"
+
+1496642316 /usr/local/include/Eigen/src/plugins/CommonCwiseUnaryOps.h
+
+1496642316 /usr/local/include/Eigen/src/plugins/CommonCwiseBinaryOps.h
+
+1496642316 /usr/local/include/Eigen/src/plugins/MatrixCwiseUnaryOps.h
+
+1496642316 /usr/local/include/Eigen/src/plugins/MatrixCwiseBinaryOps.h
+
+1496642316 /usr/local/include/Eigen/src/Core/EigenBase.h
+
+1496642316 /usr/local/include/Eigen/src/Core/Product.h
+
+1496642316 /usr/local/include/Eigen/src/Core/CoreEvaluators.h
+
+1496642316 /usr/local/include/Eigen/src/Core/AssignEvaluator.h
+
+1496642316 /usr/local/include/Eigen/src/Core/Assign.h
+
+1496642316 /usr/local/include/Eigen/src/Core/ArrayBase.h
+	"../plugins/CommonCwiseUnaryOps.h"
+	"../plugins/MatrixCwiseUnaryOps.h"
+	"../plugins/ArrayCwiseUnaryOps.h"
+	"../plugins/CommonCwiseBinaryOps.h"
+	"../plugins/MatrixCwiseBinaryOps.h"
+	"../plugins/ArrayCwiseBinaryOps.h"
+
+1496642316 /usr/local/include/Eigen/src/plugins/ArrayCwiseUnaryOps.h
+
+1496642316 /usr/local/include/Eigen/src/plugins/ArrayCwiseBinaryOps.h
+
+1496642316 /usr/local/include/Eigen/src/Core/util/BlasUtil.h
+
+1496642316 /usr/local/include/Eigen/src/Core/DenseStorage.h
+
+1496642316 /usr/local/include/Eigen/src/Core/NestByValue.h
+
+1496642316 /usr/local/include/Eigen/src/Core/ReturnByValue.h
+
+1496642316 /usr/local/include/Eigen/src/Core/NoAlias.h
+
+1496642316 /usr/local/include/Eigen/src/Core/PlainObjectBase.h
+
+1496642316 /usr/local/include/Eigen/src/Core/Matrix.h
+
+1496642316 /usr/local/include/Eigen/src/Core/Array.h
+
+1496642316 /usr/local/include/Eigen/src/Core/CwiseBinaryOp.h
+
+1496642316 /usr/local/include/Eigen/src/Core/CwiseUnaryOp.h
+
+1496642316 /usr/local/include/Eigen/src/Core/CwiseNullaryOp.h
+
+1496642316 /usr/local/include/Eigen/src/Core/CwiseUnaryView.h
+
+1496642316 /usr/local/include/Eigen/src/Core/SelfCwiseBinaryOp.h
+
+1496642316 /usr/local/include/Eigen/src/Core/Dot.h
+
+1496642316 /usr/local/include/Eigen/src/Core/StableNorm.h
+
+1496642316 /usr/local/include/Eigen/src/Core/Stride.h
+
+1496642316 /usr/local/include/Eigen/src/Core/MapBase.h
+
+1496642316 /usr/local/include/Eigen/src/Core/Map.h
+
+1496642316 /usr/local/include/Eigen/src/Core/Ref.h
+
+1496642316 /usr/local/include/Eigen/src/Core/Block.h
+
+1496642316 /usr/local/include/Eigen/src/Core/VectorBlock.h
+
+1496642316 /usr/local/include/Eigen/src/Core/Transpose.h
+
+1496642316 /usr/local/include/Eigen/src/Core/DiagonalMatrix.h
+
+1496642316 /usr/local/include/Eigen/src/Core/Diagonal.h
+
+1496642316 /usr/local/include/Eigen/src/Core/DiagonalProduct.h
+
+1496642316 /usr/local/include/Eigen/src/Core/Redux.h
+
+1496642316 /usr/local/include/Eigen/src/Core/Visitor.h
+
+1496642316 /usr/local/include/Eigen/src/Core/Fuzzy.h
+
+1496642316 /usr/local/include/Eigen/src/Core/IO.h
+
+1496642316 /usr/local/include/Eigen/src/Core/Swap.h
+
+1496642316 /usr/local/include/Eigen/src/Core/CommaInitializer.h
+
+1496642316 /usr/local/include/Eigen/src/Core/GeneralProduct.h
+
+1496642316 /usr/local/include/Eigen/src/Core/Solve.h
+
+1496642316 /usr/local/include/Eigen/src/Core/Inverse.h
+
+1496642316 /usr/local/include/Eigen/src/Core/SolverBase.h
+
+1496642316 /usr/local/include/Eigen/src/Core/PermutationMatrix.h
+
+1496642316 /usr/local/include/Eigen/src/Core/Transpositions.h
+
+1496642316 /usr/local/include/Eigen/src/Core/TriangularMatrix.h
+
+1496642316 /usr/local/include/Eigen/src/Core/SelfAdjointView.h
+
+1496642316 /usr/local/include/Eigen/src/Core/products/GeneralBlockPanelKernel.h
+
+1496642316 /usr/local/include/Eigen/src/Core/products/Parallelizer.h
+
+1496642316 /usr/local/include/Eigen/src/Core/ProductEvaluators.h
+
+1496642316 /usr/local/include/Eigen/src/Core/products/GeneralMatrixVector.h
+
+1496642316 /usr/local/include/Eigen/src/Core/products/GeneralMatrixMatrix.h
+
+1496642316 /usr/local/include/Eigen/src/Core/SolveTriangular.h
+
+1496642316 /usr/local/include/Eigen/src/Core/products/GeneralMatrixMatrixTriangular.h
+
+1496642316 /usr/local/include/Eigen/src/Core/products/SelfadjointMatrixVector.h
+
+1496642316 /usr/local/include/Eigen/src/Core/products/SelfadjointMatrixMatrix.h
+
+1496642316 /usr/local/include/Eigen/src/Core/products/SelfadjointProduct.h
+
+1496642316 /usr/local/include/Eigen/src/Core/products/SelfadjointRank2Update.h
+
+1496642316 /usr/local/include/Eigen/src/Core/products/TriangularMatrixVector.h
+
+1496642316 /usr/local/include/Eigen/src/Core/products/TriangularMatrixMatrix.h
+
+1496642316 /usr/local/include/Eigen/src/Core/products/TriangularSolverMatrix.h
+
+1496642316 /usr/local/include/Eigen/src/Core/products/TriangularSolverVector.h
+
+1496642316 /usr/local/include/Eigen/src/Core/BandMatrix.h
+
+1496642316 /usr/local/include/Eigen/src/Core/CoreIterators.h
+
+1496642316 /usr/local/include/Eigen/src/Core/BooleanRedux.h
+
+1496642316 /usr/local/include/Eigen/src/Core/Select.h
+
+1496642316 /usr/local/include/Eigen/src/Core/VectorwiseOp.h
+
+1496642316 /usr/local/include/Eigen/src/Core/Random.h
+
+1496642316 /usr/local/include/Eigen/src/Core/Replicate.h
+
+1496642316 /usr/local/include/Eigen/src/Core/Reverse.h
+
+1496642316 /usr/local/include/Eigen/src/Core/ArrayWrapper.h
+
+1496642316 /usr/local/include/Eigen/src/Core/products/GeneralMatrixMatrix_MKL.h
+
+1496642316 /usr/local/include/Eigen/src/Core/products/GeneralMatrixVector_MKL.h
+
+1496642316 /usr/local/include/Eigen/src/Core/products/GeneralMatrixMatrixTriangular_MKL.h
+
+1496642316 /usr/local/include/Eigen/src/Core/products/SelfadjointMatrixMatrix_MKL.h
+
+1496642316 /usr/local/include/Eigen/src/Core/products/SelfadjointMatrixVector_MKL.h
+
+1496642316 /usr/local/include/Eigen/src/Core/products/TriangularMatrixMatrix_MKL.h
+
+1496642316 /usr/local/include/Eigen/src/Core/products/TriangularMatrixVector_MKL.h
+
+1496642316 /usr/local/include/Eigen/src/Core/products/TriangularSolverMatrix_MKL.h
+
+1496642316 /usr/local/include/Eigen/src/Core/Assign_MKL.h
+
+1496642316 /usr/local/include/Eigen/src/Core/GlobalFunctions.h
+
+1496642316 /usr/local/include/Eigen/src/Core/util/ReenableStupidWarnings.h
+
+1496642316 /usr/local/include/Eigen/LU
+	"Core"
+	"src/Core/util/DisableStupidWarnings.h"
+	"src/misc/Kernel.h"
+	"src/misc/Image.h"
+	"src/LU/FullPivLU.h"
+	"src/LU/PartialPivLU.h"
+	"src/LU/PartialPivLU_MKL.h"
+	"src/LU/Determinant.h"
+	"src/LU/InverseImpl.h"
+	"src/LU/arch/Inverse_SSE.h"
+	"src/Core/util/ReenableStupidWarnings.h"
+
+1496642316 /usr/local/include/Eigen/src/misc/Kernel.h
+
+1496642316 /usr/local/include/Eigen/src/misc/Image.h
+
+1496642316 /usr/local/include/Eigen/src/LU/FullPivLU.h
+
+1496642316 /usr/local/include/Eigen/src/LU/PartialPivLU.h
+
+1496642316 /usr/local/include/Eigen/src/LU/PartialPivLU_MKL.h
+	"Eigen/src/Core/util/MKL_support.h"
+
+1496642316 /usr/local/include/Eigen/src/LU/Determinant.h
+
+1496642316 /usr/local/include/Eigen/src/LU/InverseImpl.h
+
+1496642316 /usr/local/include/Eigen/src/LU/arch/Inverse_SSE.h
 
