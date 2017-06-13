@@ -60,7 +60,7 @@ int main(int argc, const char * argv[]) {
     Mat referFrame;
     Mat currentFrame;
 
-    VideoCapture capture(argv[1]);
+    VideoCapture capture(argv[2]);
     int frameNumber = capture.get(CV_CAP_PROP_FRAME_COUNT);
     int reference_number=(frameNumber-1)/2;
 
@@ -164,30 +164,40 @@ int main(int argc, const char * argv[]) {
             imshow(windowName,warpedToReference[frame_i]);
         }
 
+
            //////////////////////////Initialization/////////////////
            /////// opaque occlusion/////////////
-//    Mat sum=Mat::zeros(warpedToReference[reference_number].rows,warpedToReference[reference_number].cols,CV_32F);
-//    Mat temp,background_temp;
-//    for (int frame_i=0; frame_i<frameNumber; frame_i++){
-//        warpedToReference[frame_i].convertTo(temp,CV_32F);
-//        sum+=temp;
-//    }
-//    background_temp=sum/frameNumber;
-//    background_temp.convertTo(background,CV_8UC1);
-//    imshow("opaque initial background", background);
-//
-//    warpedToReference[reference_number].convertTo(temp,CV_32F);
-//    threshold(abs(background_temp-temp), alpha_map,0.1,1,THRESH_BINARY);
-//    imshow("alpha map", alpha_map);
+    Mat sum=Mat::zeros(warpedToReference[reference_number].rows,warpedToReference[reference_number].cols,CV_32F);
+    Mat temp,background_temp;
+    for (int frame_i=0; frame_i<frameNumber; frame_i++){
+        warpedToReference[frame_i].convertTo(temp,CV_32F);
+        sum+=temp;
+    }
+    background_temp=sum/frameNumber;
+    background_temp.convertTo(background,CV_8UC1);
+    imshow("opaque initial background", background);
+
+    warpedToReference[reference_number].convertTo(temp,CV_32F);
+    //cout<<temp.type()<<endl;
+    Mat difference;
+    difference=abs(background-warpedToReference[reference_number]);
+    difference.convertTo(difference,CV_32F);
+    //cout<<difference<<endl;
+
+    //cout<<difference.type()<<endl;
+    threshold(difference, alpha_map,25.5,1,THRESH_BINARY_INV);
+    imshow("alpha map",alpha_map);
+    //cout<<alpha_map<<endl;
+
 
 //            ////////  reflection pane///////////////////
-    background=warpedToReference[reference_number];
-    for (int frame_i=0; frame_i<frameNumber; frame_i++){
-        background=min(background,warpedToReference[frame_i]);
-    }
-    imshow("reflection initial background", background);
-
-
+//    background=warpedToReference[reference_number];
+//    for (int frame_i=0; frame_i<frameNumber; frame_i++){
+//        background=min(background,warpedToReference[frame_i]);
+//    }
+//    imshow("reflection initial background", background);
+//
+//
 
 
 
