@@ -1,0 +1,14 @@
+Considering to fix if needed:
+1. To fix the Matrix data type in initial decomostion
+2. To fix image warping in the case of "outlier" correspondence in the borders
+3. edgeflow part to MRF framework 
+4. visual surface interpolation, currently using epicflow interpolation
+
+To add if needed:
+1. swtich image warping from direct alignment to iterative warping
+2. Add a parameter to choose larger motion fields as foreground or backgrond motion layers
+
+On the scheduel, next:
+1. Layer decompostion-solving Eq.10 using IRLS
+2. Update motion estimation -solving Eq.14 using IRLS
+
