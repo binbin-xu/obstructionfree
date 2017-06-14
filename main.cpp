@@ -29,6 +29,11 @@
 using namespace cv;
 using namespace std;
 
+
+int pyramid_level=3;
+int frameNumber;
+int reference_number;
+
 void colorFlow(Mat flow, string figName);
 void drawOptFlowMap(const Mat& flow, Mat& cflowmap, int step, double, const Scalar& color);
 Mat indexToMask(Mat indexMat, int rows, int cols);
@@ -41,12 +46,14 @@ Mat sparse_int_dense(Mat im1, Mat im2, Mat im1_edges, Mat sparseFlow);
 
 Mat imgWarpFlow(Mat im1, Mat flow);
 
+//motion fields initialization
+void motion_initiliazor_direct(vector<Mat> video_input, vector<Mat>& back_flowfields, vector<Mat>& fore_flowfields, vector<Mat>& warpedToReference);
+void motion_initiliazor_iterative(vector<Mat> video_input, vector<Mat>& back_flowfields, vector<Mat>& fore_flowfields, vector<Mat>& warpedToReference);
+
 int main(int argc, const char * argv[]) {
 
     //some parameters
-    int back_ransacThre=1;
-    int fore_ransacThre=1;
-    int pyramid_level=3;
+
 
     vector<Mat> back_flowfields;
     vector<Mat> fore_flowfields;
@@ -61,8 +68,8 @@ int main(int argc, const char * argv[]) {
     Mat currentFrame;
 
     VideoCapture capture(argv[2]);
-    int frameNumber = capture.get(CV_CAP_PROP_FRAME_COUNT);
-    int reference_number=(frameNumber-1)/2;
+    frameNumber = capture.get(CV_CAP_PROP_FRAME_COUNT);
+    reference_number=(frameNumber-1)/2;
 
     //namedWindow("inputVideo", WINDOW_AUTOSIZE);
     //cout<<frameNumber<<endl<<reference_number<<endl;
@@ -77,86 +84,8 @@ int main(int argc, const char * argv[]) {
     //imshow("referFrame", referFrame);
 
     /////////////////initialization->motion fields for back/foreground layers///////////
-    for (int frame_i=0; frame_i<frameNumber; frame_i++){
-        Mat im1,im2;//reference frame, other frame
-        Mat im1_grey, im2_grey;
-        Mat im1_edge, im2_edge;
-        Mat flow;
-        Mat edgeflow;  //extracted edgeflow
-
-        //Mat backH, mask_backH;
-        Mat back_edges, rest_edges, fore_edges; //edges aligned to the back layer using homography, remaining layer, foreground layers
-        Mat back_flow, rest_flow, fore_flow;
-        //Mat foreH, mask_foreH;
-        Mat back_denseFlow, fore_denseFlow;
-
-        if (frame_i!=reference_number){
-            //int frame_i=1;
-            im1 = referFrame.clone();
-            im2 = video_input[frame_i].clone();
-
-            cvtColor(im1, im1_grey, COLOR_RGB2GRAY);
-            cvtColor(im2, im2_grey, COLOR_RGB2GRAY);
-
-            //////////downsample the images
-            for (int i=0; i<pyramid_level; i++){
-                pyrDown( im1_grey, im1_grey );
-                pyrDown( im2_grey, im2_grey );
-            }
-
-
-            Canny(im1_grey, im1_edge, 10, 100,3,true);
-            Canny(im2_grey, im2_edge, 10, 100,3,true);
-
-            ///////////////replace edgeflow
-            Ptr<DenseOpticalFlow> deepflow = optflow::createOptFlow_DeepFlow();
-            deepflow->calc(im1_grey, im2_grey, flow);
-           // colorFlow(flow,"optical_flow");
-            flow.copyTo(edgeflow,im1_edge);
-            //colorFlow(edgeflow,"edge_flow");
-
-  ////////flow=>points using homography-ransac filtering, and then extract flow on the filtered edges
-            back_edges=flowHomography(im1_edge, edgeflow, back_ransacThre);
-           // imshow("back_edges", back_edges);
-            edgeflow.copyTo(back_flow,back_edges);
-           // colorFlow(back_flow, "back_flow");
-            //////////rest edges and flows
-            rest_edges=im1_edge-back_edges;
-            //imshow("rest_edges", rest_edges);
-            rest_flow=edgeflow-back_flow;
-           // colorFlow(rest_flow, "rest_flow");
-
-            ////////////align resting flows to another homograghy
-            fore_edges=flowHomography(rest_edges, rest_flow, fore_ransacThre);
-           // imshow("fore_edges", fore_edges);
-            rest_flow.copyTo(fore_flow,fore_edges);
-            //colorFlow(fore_flow, "fore_flow");
-
-    ///////////////////interpolation from sparse edgeFlow to denseFlow/////////////////////
-            back_denseFlow=sparse_int_dense(im1_grey, im2_grey, back_edges, back_flow);
-            fore_denseFlow=sparse_int_dense(im1_grey, im2_grey, fore_edges, fore_flow);
-            //cout<<back_denseFlow.type()<<endl;
-            back_flowfields.push_back(back_denseFlow.clone());
-            fore_flowfields.push_back(fore_denseFlow.clone());
-            //colorFlow(back_denseFlow,"inter_back_denseflow");
-            //colorFlow(fore_denseFlow,"inter_fore_denseflow");
-//
-    ////////////warping images to the reference frame///////////////////
-            Mat warpedFrame=imgWarpFlow(im2_grey, back_denseFlow);
-            warpedToReference.push_back(warpedFrame.clone());
-            //imshow("warped image",warpedFrame);
-        }
-        else{
-            Mat refer_grey;
-            cvtColor(referFrame, refer_grey, COLOR_RGB2GRAY);
-            for (int i=0; i<pyramid_level; i++){
-                pyrDown( refer_grey, refer_grey );
-            }
-            warpedToReference.push_back(refer_grey.clone());
-            back_flowfields.push_back(Mat::zeros(referFrame.rows,referFrame.cols,CV_32FC2));
-            fore_flowfields.push_back(Mat::zeros(referFrame.rows,referFrame.cols,CV_32FC2));
-        }
-        }
+    //motion_initiliazor_direct(video_input, back_flowfields, fore_flowfields, warpedToReference);
+    motion_initiliazor_iterative(video_input, back_flowfields, fore_flowfields, warpedToReference);
         ////////////show warped image frames/////////////
         for (int frame_i=0; frame_i<frameNumber; frame_i++){
             char windowName[10];
@@ -166,6 +95,7 @@ int main(int argc, const char * argv[]) {
 
 
            //////////////////////////Initialization/////////////////
+
            /////// opaque occlusion/////////////
     Mat sum=Mat::zeros(warpedToReference[reference_number].rows,warpedToReference[reference_number].cols,CV_32F);
     Mat temp,background_temp;
@@ -178,16 +108,13 @@ int main(int argc, const char * argv[]) {
     imshow("opaque initial background", background);
 
     warpedToReference[reference_number].convertTo(temp,CV_32F);
-    //cout<<temp.type()<<endl;
     Mat difference;
     difference=abs(background-warpedToReference[reference_number]);
-    difference.convertTo(difference,CV_32F);
-    //cout<<difference<<endl;
-
-    //cout<<difference.type()<<endl;
-    threshold(difference, alpha_map,25.5,1,THRESH_BINARY_INV);
+    threshold(difference, alpha_map,25.5,255,THRESH_BINARY_INV);
     imshow("alpha map",alpha_map);
-    //cout<<alpha_map<<endl;
+
+    foregrond=warpedToReference[reference_number]-background;
+    imshow("foreground",foregrond);
 
 
 //            ////////  reflection pane///////////////////
@@ -201,7 +128,9 @@ int main(int argc, const char * argv[]) {
 
 
 
+////////////////////IRLS decomposition/////////////////
 
+////////////////////IRLS motion estimation/////////////////
 
 /////////////////////MRF////////////////////////////////////////////////
 /*
@@ -368,3 +297,174 @@ void drawOptFlowMap(const Mat& flow, Mat& cflowmap, int step,
         return warpedFrame;
     }
 
+void motion_initiliazor_direct(const vector<Mat> video_input, vector<Mat>& back_flowfields, vector<Mat>& fore_flowfields, vector<Mat>& warpedToReference){
+    int back_ransacThre=1;
+    int fore_ransacThre=1;
+
+    for (int frame_i=0; frame_i<frameNumber; frame_i++){
+        Mat im1,im2;//reference frame, other frame
+        Mat im1_grey, im2_grey;
+        Mat im1_edge, im2_edge;
+        Mat flow;
+        Mat edgeflow;  //extracted edgeflow
+
+        //Mat backH, mask_backH;
+        Mat back_edges, rest_edges, fore_edges; //edges aligned to the back layer using homography, remaining layer, foreground layers
+        Mat back_flow, rest_flow, fore_flow;
+        //Mat foreH, mask_foreH;
+        Mat back_denseFlow, fore_denseFlow;
+
+        if (frame_i!=reference_number){
+            //int frame_i=1;
+            im1 = video_input[reference_number].clone();
+            im2 = video_input[frame_i].clone();
+
+            cvtColor(im1, im1_grey, COLOR_RGB2GRAY);
+            cvtColor(im2, im2_grey, COLOR_RGB2GRAY);
+
+            //////////downsample the images
+            for (int i=0; i<pyramid_level; i++){
+                pyrDown( im1_grey, im1_grey );
+                pyrDown( im2_grey, im2_grey );
+            }
+
+            Canny(im1_grey, im1_edge, 10, 100,3,true);
+            Canny(im2_grey, im2_edge, 10, 100,3,true);
+
+            ///////////////replace edgeflow
+            Ptr<DenseOpticalFlow> deepflow = optflow::createOptFlow_DeepFlow();
+            deepflow->calc(im1_grey, im2_grey, flow);
+            //colorFlow(flow,"optical_flow");
+            flow.copyTo(edgeflow,im1_edge);
+            //colorFlow(edgeflow,"edge_flow");
+
+  ////////flow=>points using homography-ransac filtering, and then extract flow on the filtered edges
+            back_edges=flowHomography(im1_edge, edgeflow, back_ransacThre);
+           // imshow("back_edges", back_edges);
+            edgeflow.copyTo(back_flow,back_edges);
+           // colorFlow(back_flow, "back_flow");
+            //////////rest edges and flows
+            rest_edges=im1_edge-back_edges;
+            //imshow("rest_edges", rest_edges);
+            rest_flow=edgeflow-back_flow;
+           // colorFlow(rest_flow, "rest_flow");
+
+            ////////////align resting flows to another homograghy
+            fore_edges=flowHomography(rest_edges, rest_flow, fore_ransacThre);
+            //imshow("fore_edges", fore_edges);
+            rest_flow.copyTo(fore_flow,fore_edges);
+            //colorFlow(fore_flow, "fore_flow");
+
+    ///////////////////interpolation from sparse edgeFlow to denseFlow/////////////////////
+            back_denseFlow=sparse_int_dense(im1_grey, im2_grey, back_edges, back_flow);
+            fore_denseFlow=sparse_int_dense(im1_grey, im2_grey, fore_edges, fore_flow);
+            //cout<<back_denseFlow.type()<<endl;
+            back_flowfields.push_back(back_denseFlow.clone());
+            fore_flowfields.push_back(fore_denseFlow.clone());
+            //colorFlow(back_denseFlow,"inter_back_denseflow");
+            //colorFlow(fore_denseFlow,"inter_fore_denseflow");
+//
+    ////////////warping images to the reference frame///////////////////
+            Mat warpedFrame=imgWarpFlow(im2_grey, back_denseFlow);
+            warpedToReference.push_back(warpedFrame.clone());
+            //imshow("warped image",warpedFrame);
+        }
+        else{
+            Mat refer_grey;
+            Mat referFrame=video_input[reference_number].clone();
+            cvtColor(referFrame, refer_grey, COLOR_RGB2GRAY);
+            for (int i=0; i<pyramid_level; i++){
+                pyrDown( refer_grey, refer_grey );
+            }
+            warpedToReference.push_back(refer_grey.clone());
+            back_flowfields.push_back(Mat::zeros(referFrame.rows,referFrame.cols,CV_32FC2));
+            fore_flowfields.push_back(Mat::zeros(referFrame.rows,referFrame.cols,CV_32FC2));
+        }
+        }
+    }
+
+void motion_initiliazor_iterative(const vector<Mat> video_input, vector<Mat>& back_flowfields, vector<Mat>& fore_flowfields, vector<Mat>& warpedToReference){
+    int back_ransacThre=1;
+    int fore_ransacThre=1;
+
+    for (int frame_i=0; frame_i<frameNumber; frame_i++){
+        Mat im1,im2;//reference frame, other frame
+        Mat im1_grey, im2_grey;
+        Mat im1_edge, im2_edge;
+        Mat flow;
+        Mat edgeflow;  //extracted edgeflow
+
+        //Mat backH, mask_backH;
+        Mat back_edges, rest_edges, fore_edges; //edges aligned to the back layer using homography, remaining layer, foreground layers
+        Mat back_flow, rest_flow, fore_flow;
+        //Mat foreH, mask_foreH;
+        Mat back_denseFlow, fore_denseFlow;
+
+        if (frame_i!=reference_number){
+            //int frame_i=1;
+            im1 = video_input[reference_number].clone();
+            im2 = video_input[frame_i].clone();
+
+            cvtColor(im1, im1_grey, COLOR_RGB2GRAY);
+            cvtColor(im2, im2_grey, COLOR_RGB2GRAY);
+
+            //////////downsample the images
+            for (int i=0; i<pyramid_level; i++){
+                pyrDown( im1_grey, im1_grey );
+                pyrDown( im2_grey, im2_grey );
+            }
+
+            Canny(im1_grey, im1_edge, 10, 100,3,true);
+            Canny(im2_grey, im2_edge, 10, 100,3,true);
+
+            ///////////////replace edgeflow
+            Ptr<DenseOpticalFlow> deepflow = optflow::createOptFlow_DeepFlow();
+            deepflow->calc(im1_grey, im2_grey, flow);
+            //colorFlow(flow,"optical_flow");
+            flow.copyTo(edgeflow,im1_edge);
+            //colorFlow(edgeflow,"edge_flow");
+
+  ////////flow=>points using homography-ransac filtering, and then extract flow on the filtered edges
+            back_edges=flowHomography(im1_edge, edgeflow, back_ransacThre);
+           // imshow("back_edges", back_edges);
+            edgeflow.copyTo(back_flow,back_edges);
+           // colorFlow(back_flow, "back_flow");
+            //////////rest edges and flows
+            rest_edges=im1_edge-back_edges;
+            //imshow("rest_edges", rest_edges);
+            rest_flow=edgeflow-back_flow;
+           // colorFlow(rest_flow, "rest_flow");
+
+            ////////////align resting flows to another homograghy
+            fore_edges=flowHomography(rest_edges, rest_flow, fore_ransacThre);
+            //imshow("fore_edges", fore_edges);
+            rest_flow.copyTo(fore_flow,fore_edges);
+            //colorFlow(fore_flow, "fore_flow");
+
+    ///////////////////interpolation from sparse edgeFlow to denseFlow/////////////////////
+            back_denseFlow=sparse_int_dense(im1_grey, im2_grey, back_edges, back_flow);
+            fore_denseFlow=sparse_int_dense(im1_grey, im2_grey, fore_edges, fore_flow);
+            //cout<<back_denseFlow.type()<<endl;
+            back_flowfields.push_back(back_denseFlow.clone());
+            fore_flowfields.push_back(fore_denseFlow.clone());
+            //colorFlow(back_denseFlow,"inter_back_denseflow");
+            //colorFlow(fore_denseFlow,"inter_fore_denseflow");
+//
+    ////////////warping images to the reference frame///////////////////
+            Mat warpedFrame=imgWarpFlow(im2_grey, back_denseFlow);
+            warpedToReference.push_back(warpedFrame.clone());
+            //imshow("warped image",warpedFrame);
+        }
+        else{
+            Mat refer_grey;
+            Mat referFrame=video_input[reference_number].clone();
+            cvtColor(referFrame, refer_grey, COLOR_RGB2GRAY);
+            for (int i=0; i<pyramid_level; i++){
+                pyrDown( refer_grey, refer_grey );
+            }
+            warpedToReference.push_back(refer_grey.clone());
+            back_flowfields.push_back(Mat::zeros(referFrame.rows,referFrame.cols,CV_32FC2));
+            fore_flowfields.push_back(Mat::zeros(referFrame.rows,referFrame.cols,CV_32FC2));
+        }
+        }
+    }
