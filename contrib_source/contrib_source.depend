@@ -1,0 +1,9 @@
+# depslib dependency file v1.0
+1497779871 source:/media/psf/Home/Documents/opencv_contrib_source/modules/xphoto/src/obstruction_free.cpp
+	<vector>
+	<iostream>
+	<opencv2/xphoto.hpp>
+	<opencv2/opencv.hpp>
+	<opencv2/imgproc.hpp>
+	<opencv2/highgui.hpp>
+

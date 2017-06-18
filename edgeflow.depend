@@ -1267,3 +1267,27 @@
 
 1496642316 /usr/local/include/Eigen/src/LU/arch/Inverse_SSE.h
 
+1496327986 source:/media/psf/Home/Dropbox/code_working/opencv/edgeflow/edgeflow.cpp
+	"edgeflow.h"
+
+1496327951 /media/psf/Home/Dropbox/code_working/opencv/edgeflow/edgeflow.h
+	<opencv2/opencv.hpp>
+	"opencv2/core/core.hpp"
+	<opencv2/highgui.hpp>
+	<opencv2/imgproc.hpp>
+	"mrf.h"
+
+1164590142 /media/psf/Home/Dropbox/code_working/opencv/edgeflow/MRF2.2/mrf.h
+	<stdio.h>
+
+1497800398 source:/media/psf/Home/Dropbox/code_working/opencv/edgeflow/main.cpp
+	<iostream>
+	<opencv2/core.hpp>
+	<opencv2/imgproc.hpp>
+	<opencv2/highgui.hpp>
+	<opencv2/optflow.hpp>
+	<opencv2/ximgproc/sparse_match_interpolator.hpp>
+	<stdlib.h>
+	<stdio.h>
+	"edgeflow.h"
+
