@@ -55,6 +55,8 @@ void initila_motion_decompose(Mat im1, Mat im2, Mat& back_denseFlow, Mat& fore_d
 void motion_initiliazor_direct(vector<Mat> video_input, vector<Mat>& back_flowfields, vector<Mat>& fore_flowfields, vector<Mat>& warpedToReference);
 //matching between neighbouring frames and warping to the reference frame
 void motion_initiliazor_iterative(vector<Mat> video_input, vector<Mat>& back_flowfields, vector<Mat>& fore_flowfields, vector<Mat>& warpedToReference);
+//irls motion decomposition
+void mot_decom_irls(const vector<Mat>& input_sequence, Mat& backgd_comp, Mat& obstruc_comp, Mat& alpha_map, vector<Mat> back_flowfields, vector<Mat> fore_flowfields);
 
 int main(int argc, const char * argv[]) {
 
@@ -152,6 +154,7 @@ int main(int argc, const char * argv[]) {
 
 
 ////////////////////IRLS decomposition/////////////////
+
 
 ////////////////////IRLS motion estimation/////////////////
 
@@ -503,3 +506,8 @@ void motion_initiliazor_iterative(const vector<Mat> video_input, vector<Mat>& ba
 
         }
 
+void mot_decom_irls(const vector<Mat>& input_sequence, Mat& backgd_comp, Mat& obstruc_comp, Mat& alpha_map, vector<Mat> back_flowfields, vector<Mat> fore_flowfields){
+    int width = backgd_comp.cols;
+    int height = backgd_comp.rows;
+
+}
