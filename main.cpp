@@ -56,7 +56,7 @@ void motion_initiliazor_direct(vector<Mat> video_input, vector<Mat>& back_flowfi
 //matching between neighbouring frames and warping to the reference frame
 void motion_initiliazor_iterative(vector<Mat> video_input, vector<Mat>& back_flowfields, vector<Mat>& fore_flowfields, vector<Mat>& warpedToReference);
 //irls motion decomposition
-void mot_decom_irls(const vector<Mat>& input_sequence, Mat& backgd_comp, Mat& obstruc_comp, Mat& alpha_map, vector<Mat> back_flowfields, vector<Mat> fore_flowfields);
+void mot_decom_irls(const vector<Mat>& input_sequence, Mat& backgd_comp, Mat& obstruc_comp, Mat& alpha_map, vector<Mat> back_flowfields, vector<Mat> fore_flowfields,  int nOuterFPIterations);
 
 int main(int argc, const char * argv[]) {
 
@@ -506,8 +506,43 @@ void motion_initiliazor_iterative(const vector<Mat> video_input, vector<Mat>& ba
 
         }
 
-void mot_decom_irls(const vector<Mat>& input_sequence, Mat& backgd_comp, Mat& obstruc_comp, Mat& alpha_map, vector<Mat> back_flowfields, vector<Mat> fore_flowfields){
+void mot_decom_irls(const vector<Mat>& input_sequence, Mat& backgd_comp, Mat& obstruc_comp, Mat& alpha_map, vector<Mat> back_flowfields, vector<Mat> fore_flowfields, int nOuterFPIterations){
     int width = backgd_comp.cols;
     int height = backgd_comp.rows;
+    int npixels = width*height;
+    int nInnerFPIterations=10;
+
+    double lambda_1 = 1;
+    double lamdba_2 = 0.1;
+    double lambda_3 = 3000;
+    double lambda_4 = 0.5;
+
+    double varepsilon = pow(0.001,2);
+    Mat backgd_dx, backgd_dy, obstruc_dx, obstruc_dy;
+    int deriv_ddepth = CV_64F;
+
+    Mat omega_1(height,width,CV_64F);
+    Mat omega_2(height,width,CV_64F);
+    Mat omega_3(height,width,CV_64F);
+
+    for(int ocount=0; ocount<nOuterFPIterations; ocount++){
+        //compute gradients of current background and occlusion component
+        Sobel(backgd_comp, backgd_dx, deriv_ddepth, 1, 0);
+        Sobel(backgd_comp, backgd_dy, deriv_ddepth, 0, 1);
+        Sobel(obstruc_comp, obstruc_dx, deriv_ddepth, 1, 0);
+        Sobel(obstruc_comp, obstruc_dy, deriv_ddepth, 0, 1);
+
+        //compute derivative denominators (weights)
+        for(int icount =0; icount< nInnerFPIterations; icount++){
+            for(int i=0;i<npixels;i++){
+                omega_2.at<double>(i) = 1/sqrt(backgd_dx.at<double>(i)*backgd_dx.at<double>(i)+backgd_dy.at<double>(i)*backgd_dy.at<double>(i)+varepsilon);
+                omega_3.at<double>(i) = 1/sqrt(obstruc_dx.at<double>(i)*obstruc_dx.at<double>(i)+obstruc_dy.at<double>(i)*obstruc_dy.at<double>(i)+varepsilon);
+            }
+
+        }
+
+
+
+    }
 
 }
