@@ -58,6 +58,13 @@ void motion_initiliazor_iterative(const vector<Mat>& video_input, vector<Mat>& b
 //irls motion decomposition
 void mot_decom_irls(const vector<Mat>& input_sequence, Mat& backgd_comp, Mat& obstruc_comp, Mat& alpha_map, vector<Mat> back_flowfields, vector<Mat> fore_flowfields,  int nOuterFPIterations);
 
+Mat Laplac(const Mat& input);
+Mat imshow32F(Mat A);
+
+void motDecomIrlsWeight(const vector<Mat>& input_sequence, const Mat& backgd_comp, const Mat& obstruc_comp,
+                        Mat& alpha_map, const vector<Mat>& back_flowfields, const vector<Mat>& fore_flowfields,
+                        vector<float>& omega_1, vector<float>& omega_2, vector<float>& omega_3);
+
 int main(int argc, const char * argv[]) {
 
     //some parameters
@@ -154,6 +161,50 @@ int main(int argc, const char * argv[]) {
 
 
 ////////////////////IRLS decomposition/////////////////
+Mat lapForeground;
+Mat lapBackground;
+
+cout<<background.type()<<endl;
+cout<<(int)background.at<unsigned char>(5,5)<<endl;
+//background.convertTo(test,CV_32F, 1.0/255.0f);
+
+//Mat1f test(background);
+
+lapForeground = Laplac(foregrond);
+lapBackground = Laplac(background);
+
+imshow("laplcian-backgounrd", lapBackground);
+//cout<<lapBackground<<endl;
+cout<<background.type()<<endl;
+cout<<lapBackground.type()<<endl;
+
+Mat lap1;
+lapBackground.convertTo(lap1,CV_8U);
+imshow("lap1",lap1);
+//cout<<lap1<<endl;
+
+
+
+
+//int nOuterFPIterations=5;
+//int nInnerFPIterations=3;
+//for(int ocount=0; ocount<nOuterFPIterations; ocount++){
+//        for(int icount =0; icount< nInnerFPIterations; icount++){
+//        }
+//}
+
+vector<float> omega_1;
+vector<float> omega_2;
+vector<float> omega_3;
+
+
+motDecomIrlsWeight(video_coarseLeve, background, foregrond, alpha_map, back_flowfields, fore_flowfields,
+                        omega_1, omega_2, omega_3);
+
+
+
+motDecomIrlsWeight(video_coarseLeve, background, foregrond, alpha_map, back_flowfields, fore_flowfields,
+                        omega_1, omega_2, omega_3);
 
 
 ////////////////////IRLS motion estimation/////////////////
@@ -199,6 +250,15 @@ int main(int argc, const char * argv[]) {
 
 }
 
+Mat imshow32F(Mat A){
+    CV_Assert(A.type()==CV_32F);
+
+    Mat Ashow(A.rows,A.cols, CV_8U);
+    double minval, maxval;
+    minMaxIdx(A, &minval, &maxval);
+    A.convertTo(Ashow,CV_8U,255.0/(maxval-minval),-255.0*minval/(maxval-minval));
+    return Ashow;
+}
 
 void colorFlow(Mat flow, string figName="optical flow")
 {
@@ -308,7 +368,8 @@ void drawOptFlowMap(const Mat& flow, Mat& cflowmap, int step,
         return denseFlow;
     }
 
-  void initila_motion_decompose(Mat im1, Mat im2, Mat& back_denseFlow, Mat& fore_denseFlow, int back_ransacThre=1, int fore_ransacThre=1){
+  void initila_motion_decompose(Mat im1, Mat im2, Mat& back_denseFlow, Mat& fore_denseFlow,
+                                int back_ransacThre=1, int fore_ransacThre=1){
         if (im1.channels()!= 1)
             cvtColor(im1, im1, COLOR_RGB2GRAY);
         if (im2.channels()!= 1)
@@ -395,7 +456,8 @@ void drawOptFlowMap(const Mat& flow, Mat& cflowmap, int step,
         return obj_flow;
     }
 
-void motion_initiliazor_direct(const vector<Mat>& video_input, vector<Mat>& back_flowfields, vector<Mat>& fore_flowfields, vector<Mat>& warpedToReference){
+void motion_initiliazor_direct(const vector<Mat>& video_input, vector<Mat>& back_flowfields,
+                               vector<Mat>& fore_flowfields, vector<Mat>& warpedToReference){
     int back_ransacThre=1;
     int fore_ransacThre=1;
 
@@ -411,7 +473,8 @@ void motion_initiliazor_direct(const vector<Mat>& video_input, vector<Mat>& back
             im2 = video_input[frame_i].clone();
 
             //decompose motion fields into fore/background
-            initila_motion_decompose(im1, im2, back_denseFlow, fore_denseFlow, back_ransacThre, fore_ransacThre);
+            initila_motion_decompose(im1, im2, back_denseFlow, fore_denseFlow,
+                                     back_ransacThre, fore_ransacThre);
 
             //cout<<back_denseFlow.type()<<endl;
             back_flowfields.push_back(back_denseFlow.clone());
@@ -433,7 +496,8 @@ void motion_initiliazor_direct(const vector<Mat>& video_input, vector<Mat>& back
         }
     }
 
-void motion_initiliazor_iterative(const vector<Mat>& video_input, vector<Mat>& back_flowfields, vector<Mat>& fore_flowfields, vector<Mat>& warpedToReference){
+void motion_initiliazor_iterative(const vector<Mat>& video_input, vector<Mat>& back_flowfields,
+                                  vector<Mat>& fore_flowfields, vector<Mat>& warpedToReference){
     int back_ransacThre=1;
     int fore_ransacThre=1;
     vector<Mat> backfields_iterative;
@@ -506,54 +570,136 @@ void motion_initiliazor_iterative(const vector<Mat>& video_input, vector<Mat>& b
 
         }
 
-void mot_decom_irls(const vector<Mat>& input_sequence, Mat& backgd_comp, Mat& obstruc_comp, Mat& alpha_map, const vector<Mat>& back_flowfields, const vector<Mat>& fore_flowfields, int nOuterFPIterations){
+Mat Laplac(const Mat& input)
+    {
+        CV_Assert(input.type() == CV_8U ||input.type() == CV_32F);
+
+        Mat _input;
+        if (input.type() == CV_8U) input.convertTo(_input, CV_32F);
+        else _input=input.clone();
+
+        int width=input.cols;
+        int height=input.rows;
+
+        _input = _input.reshape(0,1);
+        Size s=_input.size();
+        Mat temp=Mat::zeros(s, CV_32FC1);
+        Mat _output=Mat::zeros(s, CV_32FC1);
+        Mat output =Mat::zeros(height, width, CV_32FC1);
+
+
+
+        // horizontal filtering
+        for(int i=0;i<height;i++)
+            for(int j=0;j<width-1;j++)
+            {
+                int offset=i*width+j;
+                temp.at<float>(offset)=_input.at<float>(offset+1) - _input.at<float>(offset);
+            }
+
+        for(int i=0;i<height;i++)
+            for(int j=0;j<width;j++)
+            {
+                int offset=i*width+j;
+                if(j<width-1)
+                    _output.at<float>(offset) -= temp.at<float>(offset);
+                if(j>0)
+                    _output.at<float>(offset) += temp.at<float>(offset-1);
+            }
+
+        temp.release();
+
+        temp=Mat::zeros(s, CV_32FC1);
+
+        // vertical filtering
+        for(int i=0;i<height-1;i++)
+            for(int j=0;j<width;j++)
+            {
+                int offset=i*width+j;
+                temp.at<float>(offset)=_input.at<float>(offset+width)- _input.at<float>(offset);
+            }
+        for(int i=0;i<height;i++)
+            for(int j=0;j<width;j++)
+            {
+                int offset=i*width+j;
+                if(i<height-1)
+                    _output.at<float>(offset) -= temp.at<float>(offset);
+                if(i>0)
+                    _output.at<float>(offset) += temp.at<float>(offset-width);
+            }
+
+            output = _output.reshape(0, input.rows);
+            //output.convertTo(output, input.type());
+            return output;
+    }
+
+void motDecomIrlsWeight(const vector<Mat>& input_sequence, const Mat& backgd_comp, const Mat& obstruc_comp,
+                        Mat& alpha_map, const vector<Mat>& back_flowfields, const vector<Mat>& fore_flowfields,
+                        vector<float>& omega_1, vector<float>& omega_2, vector<float>& omega_3){
+
     int width = backgd_comp.cols;
     int height = backgd_comp.rows;
     int npixels = width*height;
-    int nInnerFPIterations=10;
 
-    double lambda_1 = 1;
-    double lamdba_2 = 0.1;
-    double lambda_3 = 3000;
-    double lambda_4 = 0.5;
+    CV_Assert(omega_1.size() == 0 || omega_1.size() == input_sequence.size()*backgd_comp.total());
+    CV_Assert(omega_2.size() == 0 || omega_2.size() == backgd_comp.total());
+    CV_Assert(omega_3.size() == 0 || omega_3.size() == backgd_comp.total());
 
-    double varepsilon = pow(0.001,2);
-    Mat backgd_dx, backgd_dy, obstruc_dx, obstruc_dy;
-    int deriv_ddepth = CV_64F;
+    float varepsilon = pow(0.001,2);
+    int deriv_ddepth = CV_32F;
 
-    double omega_1[input_sequence.size()][npixels]={0};
-    double omega_2[npixels]={0};
-    double omega_3[npixels]={0};
+    Mat backgd_dx;
+    Mat backgd_dy;
+    Mat obstruc_dx;
+    Mat obstruc_dy;
 
 
+    //compute gradients of current background and occlusion components
+    Sobel(backgd_comp, backgd_dx, deriv_ddepth, 1, 0);
+    Sobel(backgd_comp, backgd_dy, deriv_ddepth, 0, 1);
+    Sobel(obstruc_comp, obstruc_dx, deriv_ddepth, 1, 0);
+    Sobel(obstruc_comp, obstruc_dy, deriv_ddepth, 0, 1);
 
-    for(int ocount=0; ocount<nOuterFPIterations; ocount++){
-        //compute gradients of current background and occlusion component
-        Sobel(backgd_comp, backgd_dx, deriv_ddepth, 1, 0);
-        Sobel(backgd_comp, backgd_dy, deriv_ddepth, 0, 1);
-        Sobel(obstruc_comp, obstruc_dx, deriv_ddepth, 1, 0);
-        Sobel(obstruc_comp, obstruc_dy, deriv_ddepth, 0, 1);
+    //if weights have not been initialized
+    if (omega_1.size()==0 && omega_2.size() == 0 && omega_3.size() == 0){
+
         //compute derivative denominators (weights)
-        for(int icount =0; icount< nInnerFPIterations; icount++){
-            //calculate the weights
+        for(size_t tt=0; tt<input_sequence.size(); tt++){
+                Mat img=input_sequence[tt];
+                Mat back_flow=back_flowfields[tt];
+                Mat obstruc_flow=fore_flowfields[tt];
+                Mat temp = img-imgWarpFlow(obstruc_comp,obstruc_flow)-imgWarpFlow(alpha_map,obstruc_flow).mul(imgWarpFlow(backgd_comp,back_flow));
+                for(int i=0; i<npixels;i++){
+                    omega_1.push_back(1/sqrt(temp.at<float>(i)*temp.at<float>(i)+varepsilon));
+                }
+        }
+        for(int i=0;i<npixels;i++){
+            omega_2.push_back(1/sqrt(backgd_dx.at<float>(i)*backgd_dx.at<float>(i)+backgd_dy.at<float>(i)*backgd_dy.at<float>(i)+varepsilon)) ;
+            omega_3.push_back(1/sqrt(obstruc_dx.at<float>(i)*obstruc_dx.at<float>(i)+obstruc_dy.at<float>(i)*obstruc_dy.at<float>(i)+varepsilon));
+        }
+    }
+
+    //if weights have been calculated
+    else if (omega_1.size() == input_sequence.size()*backgd_comp.total() && omega_2.size() == backgd_comp.total() &&
+             omega_3.size() == backgd_comp.total()){
+
+            //compute derivative denominators (weights)
             for(size_t tt=0; tt<input_sequence.size(); tt++){
                 Mat img=input_sequence[tt];
                 Mat back_flow=back_flowfields[tt];
                 Mat obstruc_flow=fore_flowfields[tt];
                 Mat temp = img-imgWarpFlow(obstruc_comp,obstruc_flow)-imgWarpFlow(alpha_map,obstruc_flow).mul(imgWarpFlow(backgd_comp,back_flow));
                 for(int i=0; i<npixels;i++){
-                    omega_1[tt][i]=1/sqrt(temp.at<double>(i)*temp.at<double>(i)+varepsilon);
+                    int offset = i + tt*npixels;
+                    omega_1[offset] = 1/sqrt(temp.at<float>(i)*temp.at<float>(i)+varepsilon);
                 }
-            }
-            for(int i=0;i<npixels;i++){
-                omega_2[i] = 1/sqrt(backgd_dx.at<double>(i)*backgd_dx.at<double>(i)+backgd_dy.at<double>(i)*backgd_dy.at<double>(i)+varepsilon);
-                omega_3[i] = 1/sqrt(obstruc_dx.at<double>(i)*obstruc_dx.at<double>(i)+obstruc_dy.at<double>(i)*obstruc_dy.at<double>(i)+varepsilon);
-            }
-
         }
-
-
-
+        for(int i=0;i<npixels;i++){
+            omega_2[i] = 1/sqrt(backgd_dx.at<float>(i)*backgd_dx.at<float>(i)+backgd_dy.at<float>(i)*backgd_dy.at<float>(i)+varepsilon);
+            omega_3[i] = 1/sqrt(obstruc_dx.at<float>(i)*obstruc_dx.at<float>(i)+obstruc_dy.at<float>(i)*obstruc_dy.at<float>(i)+varepsilon);
+        }
     }
+
+
 
 }
